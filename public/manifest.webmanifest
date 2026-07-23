@@ -1,7 +1,7 @@
 {
-  "name": "Tich gop",
-  "short_name": "Tich gop",
-  "description": "Theo doi tong tiet kiem ca nhan",
+  "name": "Tích góp",
+  "short_name": "Tích góp",
+  "description": "Theo dõi tiết kiệm cá nhân",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
