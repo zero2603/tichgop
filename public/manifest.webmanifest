@@ -1,0 +1,10 @@
+{
+  "name": "Tich gop",
+  "short_name": "Tich gop",
+  "description": "Theo doi tong tiet kiem ca nhan",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbfbf8",
+  "theme_color": "#fbfbf8"
+}
