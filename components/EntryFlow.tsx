@@ -21,7 +21,7 @@ function StepShell({
 }) {
   return (
     <section className="flex min-h-[calc(100svh-2.5rem)] flex-col rounded-lg border border-white/55 bg-white/82 p-5 shadow-[0_18px_50px_rgb(31_41_51_/_12%)] backdrop-blur-md">
-      <h1 className="text-base font-semibold leading-snug text-ink">{title}</h1>
+      <h1 className="text-2xl font-semibold leading-snug text-ink">{title}</h1>
       {children}
     </section>
   );
@@ -32,12 +32,14 @@ function ItemEditor({
   items,
   submitLabel,
   emptyLabel,
+  backHref,
   confirmRefundOnDelete = false
 }: {
   action: (formData: FormData) => void;
   items: Item[];
   submitLabel: string;
   emptyLabel: string;
+  backHref: string;
   confirmRefundOnDelete?: boolean;
 }) {
   const [visibleIds, setVisibleIds] = useState(() => items.map((item) => item.id));
@@ -147,7 +149,13 @@ function ItemEditor({
         </button>
       </div>
 
-      <div className="mt-auto flex justify-end pt-8">
+      <div className="mt-auto flex items-center justify-end gap-2 pt-8">
+        <Link
+          className="inline-flex min-h-12 min-w-28 items-center justify-center rounded-md border border-ink/20 bg-white/75 px-5 py-2 text-sm font-semibold text-ink/75 shadow-sm transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-sky/30"
+          href={backHref}
+        >
+          Quay lại
+        </Link>
         <button
           className="inline-flex min-h-12 min-w-28 items-center justify-center rounded-md border border-amber-300 bg-amber-100/95 px-5 py-2 text-sm font-semibold text-ink shadow-sm transition hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-300"
           type="submit"
@@ -175,7 +183,13 @@ export function EntryFlow({ grouped, step }: { grouped: GroupedItems; step: Entr
             />
             <span>VND</span>
           </label>
-          <div className="mt-auto flex justify-end pt-8">
+          <div className="mt-auto flex items-center justify-end gap-2 pt-8">
+            <Link
+              className="inline-flex min-h-12 min-w-28 items-center justify-center rounded-md border border-ink/20 bg-white/75 px-5 py-2 text-sm font-semibold text-ink/75 shadow-sm transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-sky/30"
+              href="/"
+            >
+              Quay lại
+            </Link>
             <button
               className="inline-flex min-h-12 min-w-28 items-center justify-center rounded-md border border-amber-300 bg-amber-100/95 px-5 py-2 text-sm font-semibold text-ink shadow-sm transition hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-300"
               type="submit"
@@ -196,6 +210,7 @@ export function EntryFlow({ grouped, step }: { grouped: GroupedItems; step: Entr
           items={grouped.regular}
           submitLabel="Tiếp"
           emptyLabel="Chưa có khoản tăng thêm."
+          backHref="/entry?step=balance"
         />
       </StepShell>
     );
@@ -208,14 +223,12 @@ export function EntryFlow({ grouped, step }: { grouped: GroupedItems; step: Entr
         items={grouped.savings}
         submitLabel="Chốt sổ"
         emptyLabel="Chưa có khoản đầu tư hoặc tiết kiệm."
+        backHref="/entry?step=additions"
         confirmRefundOnDelete
       />
       <p className="mt-4 text-center text-xs text-ink/55">
         Tổng hiện tại: {formatMoney([grouped.available, ...grouped.regular, ...grouped.savings].filter(Boolean).reduce((sum, item) => sum + (item?.amount ?? 0), 0))} VND
       </p>
-      <Link className="mt-3 block text-center text-sm font-semibold text-sky" href="/entry?step=additions">
-        Quay lại
-      </Link>
     </StepShell>
   );
 }

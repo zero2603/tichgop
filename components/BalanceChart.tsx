@@ -11,6 +11,14 @@ import {
 import { formatDateTime, formatMoney } from "@/lib/format";
 import type { BalancePoint } from "@/lib/types";
 
+const MILLION = 1_000_000;
+
+function formatMillionTick(value: number) {
+  return new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 1
+  }).format(value / MILLION);
+}
+
 export function BalanceChart({ history }: { history: BalancePoint[] }) {
   if (history.length === 0) {
     return <p className="py-8 text-sm text-ink/60">Chưa có lịch sử chốt sổ.</p>;
@@ -26,9 +34,9 @@ export function BalanceChart({ history }: { history: BalancePoint[] }) {
             tick={{ fontSize: 12, fill: "#596e54" }}
           />
           <YAxis
-            tickFormatter={(value) => formatMoney(Number(value))}
+            tickFormatter={(value) => formatMillionTick(Number(value))}
             tick={{ fontSize: 12, fill: "#596e54" }}
-            width={90}
+            width={36}
           />
           <Tooltip
             formatter={(value) => [`${formatMoney(Number(value))} VND`, "Tổng"]}

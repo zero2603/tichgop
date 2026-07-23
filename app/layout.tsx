@@ -2,9 +2,17 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Savings Tracker",
-  description: "Personal balance snapshot tracker",
+  title: "Tích góp",
+  description: "Tích góp cá nhân của tôi",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon.webp", sizes: "500x500", type: "image/webp" }
+    ],
+    shortcut: "/favicon-32.png",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
+  },
   appleWebApp: {
     capable: true,
     title: "Tích góp",

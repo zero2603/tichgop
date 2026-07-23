@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BalanceChart } from "@/components/BalanceChart";
 import { SetupNotice } from "@/components/SetupNotice";
-import { formatMoney } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 import { getBalanceHistory, getItemsGrouped, getTotal } from "@/lib/actions";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import type { Item } from "@/lib/types";
@@ -17,14 +17,15 @@ export default async function HomePage() {
   const allItems = [grouped.available, ...grouped.regular, ...grouped.savings].filter(
     (item): item is Item => Boolean(item)
   );
+  const lastTotalUpdate = history.at(-1)?.snapshot_at;
 
   return (
     <div className="flex min-h-[calc(100svh-2.5rem)] flex-col gap-4">
       {!configured ? <SetupNotice /> : null}
 
       <section className="flex flex-col rounded-lg border border-white/55 bg-white/78 p-5 shadow-[0_18px_50px_rgb(31_41_51_/_12%)] backdrop-blur-md">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-sm font-semibold text-ink/80">Tổng tiết kiệm</p>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-lg font-semibold text-ink/80">Tổng tiết kiệm</h1>
           <Link
             href="/entry?step=balance"
             className="inline-flex min-h-10 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50/95 px-4 py-2 text-sm font-semibold text-ink shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-300"
@@ -35,6 +36,11 @@ export default async function HomePage() {
         <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-normal text-ink">
           {formatMoney(total)} VND
         </h1>
+        {lastTotalUpdate ? (
+          <p className="mt-2 text-sm font-medium text-ink/55">
+            Cập nhật lần cuối: {formatDateTime(lastTotalUpdate)}
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-lg border border-white/55 bg-white/78 px-4 shadow-[0_12px_36px_rgb(31_41_51_/_10%)] backdrop-blur-md">
@@ -60,7 +66,7 @@ export default async function HomePage() {
       </section>
 
       <section className="rounded-lg border border-white/55 bg-white/78 p-4 shadow-[0_12px_36px_rgb(31_41_51_/_10%)] backdrop-blur-md">
-        <h2 className="text-base font-semibold">Lịch sử tổng</h2>
+        <h2 className="text-lg font-semibold">Lịch sử tổng</h2>
         <BalanceChart history={history} />
       </section>
     </div>
