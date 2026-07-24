@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { formatMoney } from "@/lib/format";
 
+const THOUSAND = 1_000;
+
 type MoneyInputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "defaultValue" | "onChange" | "type"> & {
   defaultValue?: number | string;
 };
@@ -13,7 +15,7 @@ function displayValue(value: number | string | undefined) {
   }
 
   const amount = Number(value);
-  return Number.isFinite(amount) ? formatMoney(amount) : "";
+  return Number.isFinite(amount) ? formatMoney(amount / THOUSAND) : "";
 }
 
 export function MoneyInput({ defaultValue, ...props }: MoneyInputProps) {

@@ -14,7 +14,7 @@ export default async function HomePage() {
     ? await Promise.all([getItemsGrouped(), getTotal(), getBalanceHistory()])
     : [{ available: null, regular: [], savings: [] }, 0, []];
 
-  const allItems = [grouped.available, ...grouped.regular, ...grouped.savings].filter(
+  const allItems = [grouped.available, ...grouped.savings].filter(
     (item): item is Item => Boolean(item)
   );
   const lastTotalUpdate = history.at(-1)?.snapshot_at;
@@ -33,9 +33,13 @@ export default async function HomePage() {
             Cập nhật
           </Link>
         </div>
-        <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-normal text-ink">
-          {formatMoney(total)} VND
-        </h1>
+        <div className="mt-4 flex gap-3 items-stretch">
+          <h1 className="text-4xl font-semibold leading-tight tracking-normal text-ink">
+            {formatMoney(total)}
+          </h1>
+          <div className="text-base font-semibold">VND</div>
+        </div>
+
         {lastTotalUpdate ? (
           <p className="mt-2 text-sm font-medium text-ink/55">
             Cập nhật lần cuối: {formatDateTime(lastTotalUpdate)}
@@ -54,10 +58,8 @@ export default async function HomePage() {
                 <p className="mt-1 text-xs text-ink/55">
                   {item.type === "available"
                     ? "Số dư khả dụng"
-                    : item.type === "regular"
-                      ? "Khoản tăng thêm"
-                      : "Đầu tư & tiết kiệm"}
-                  </p>
+                    : "Đầu tư & tiết kiệm"}
+                </p>
               </div>
               <p className="max-w-[9rem] text-right font-semibold leading-snug">{formatMoney(item.amount)} VND</p>
             </div>

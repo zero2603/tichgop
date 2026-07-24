@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { saveAvailableBalance, saveRegularItems, saveSavingsAndSnapshot } from "@/lib/actions";
+import { saveAdditionalAmounts, saveAvailableBalance, saveSavingsAndSnapshot } from "@/lib/actions";
 import { formatMoney } from "@/lib/format";
 import type { GroupedItems, Item } from "@/lib/types";
 import { MoneyInput } from "@/components/MoneyInput";
@@ -14,16 +15,40 @@ type DraftRow = {
 
 function StepShell({
   title,
+  note,
   children
 }: {
   title: string;
+  note?: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="flex min-h-[calc(100svh-2.5rem)] flex-col rounded-lg border border-white/55 bg-white/82 p-5 shadow-[0_18px_50px_rgb(31_41_51_/_12%)] backdrop-blur-md">
       <h1 className="text-2xl font-semibold leading-snug text-ink">{title}</h1>
+      {note ? <p className="mt-2 text-sm font-medium text-ink/55">{note}</p> : null}
       {children}
     </section>
+  );
+}
+
+function SubmitButton({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      className="inline-flex min-h-12 min-w-28 items-center justify-center gap-2 rounded-md border border-amber-300 bg-amber-100/95 px-5 py-2 text-sm font-semibold text-ink shadow-sm transition hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-300 disabled:cursor-wait disabled:opacity-75 disabled:hover:bg-amber-100/95"
+      type="submit"
+      disabled={pending}
+      aria-disabled={pending}
+    >
+      {pending ? (
+        <span
+          className="size-4 animate-spin rounded-full border-2 border-ink/25 border-t-ink"
+          aria-hidden="true"
+        />
+      ) : null}
+      <span>{pending ? "Đang lưu..." : label}</span>
+    </button>
   );
 }
 
@@ -156,12 +181,61 @@ function ItemEditor({
         >
           Quay lại
         </Link>
+        <SubmitButton label={submitLabel} />
+      </div>
+    </form>
+  );
+}
+
+function AdditionsEditor() {
+  const [rows, setRows] = useState<DraftRow[]>(() => [{ key: Date.now() }]);
+
+  function removeRow(key: number) {
+    setRows((currentRows) => currentRows.filter((row) => row.key !== key));
+  }
+
+  return (
+    <form action={saveAdditionalAmounts} className="flex min-h-0 flex-1 flex-col">
+      <div className="mt-5 grid gap-3">
+        {rows.map((row) => (
+          <div className="grid grid-cols-[minmax(0,1fr)_2.75rem] items-center gap-2" key={row.key}>
+            <MoneyInput
+              name="addition_amount"
+              className="min-h-12 min-w-0 rounded-md border border-ink/35 bg-white/92 px-3 py-2 text-right text-base outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/20"
+              aria-label="Số tiền tăng thêm"
+              autoFocus={rows.length === 1}
+            />
+            <button
+              className="inline-grid min-h-12 w-11 place-items-center rounded-md border border-red-200 bg-white/90 text-sm font-bold text-brick transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200 disabled:cursor-not-allowed disabled:opacity-45"
+              type="button"
+              onClick={() => removeRow(row.key)}
+              disabled={rows.length === 1}
+              aria-label="Xóa khoản tăng thêm"
+            >
+              X
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-end pt-4">
         <button
-          className="inline-flex min-h-12 min-w-28 items-center justify-center rounded-md border border-amber-300 bg-amber-100/95 px-5 py-2 text-sm font-semibold text-ink shadow-sm transition hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-300"
-          type="submit"
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50/95 px-4 py-2 text-sm font-semibold text-ink shadow-sm transition hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+          type="button"
+          onClick={() => setRows((currentRows) => [...currentRows, { key: Date.now() + currentRows.length }])}
         >
-          {submitLabel}
+          Thêm khoản
         </button>
+      </div>
+
+      <div className="mt-auto flex items-center justify-end gap-2 pt-8">
+        <Link
+          className="inline-flex min-h-12 min-w-28 items-center justify-center rounded-md border border-ink/20 bg-white/75 px-5 py-2 text-sm font-semibold text-ink/75 shadow-sm transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-sky/30"
+          href="/entry?step=balance"
+        >
+          Quay lại
+        </Link>
+        <SubmitButton label="Tiếp" />
       </div>
     </form>
   );
@@ -170,18 +244,18 @@ function ItemEditor({
 export function EntryFlow({ grouped, step }: { grouped: GroupedItems; step: EntryStep }) {
   if (step === "balance") {
     return (
-      <StepShell title="Nhập số dư khả dụng hiện tại">
+      <StepShell title="Nhập số dư khả dụng hiện tại" note="Đơn vị nhập: nghìn VND. Ví dụ: nhập 10 = 10.000 VND.">
         <form action={saveAvailableBalance} className="flex flex-1 flex-col">
           <label className="mt-8 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 text-sm font-medium text-ink/75">
             <MoneyInput
               name="available_amount"
               defaultValue={grouped.available?.amount ?? ""}
-              className="min-h-12 min-w-0 border-0 border-b border-ink/80 bg-transparent px-1 pb-2 text-right text-xl outline-none transition focus:border-sky"
+              className="min-h-12 min-w-0 border-0 border-b border-ink/80 rounded-none bg-transparent px-1 pb-2 text-right text-xl outline-none transition focus:border-sky"
               aria-label="Số dư khả dụng hiện tại"
               required
               autoFocus
             />
-            <span>VND</span>
+            <span>nghìn VND</span>
           </label>
           <div className="mt-auto flex items-center justify-end gap-2 pt-8">
             <Link
@@ -190,12 +264,7 @@ export function EntryFlow({ grouped, step }: { grouped: GroupedItems; step: Entr
             >
               Quay lại
             </Link>
-            <button
-              className="inline-flex min-h-12 min-w-28 items-center justify-center rounded-md border border-amber-300 bg-amber-100/95 px-5 py-2 text-sm font-semibold text-ink shadow-sm transition hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-300"
-              type="submit"
-            >
-              Tiếp
-            </button>
+            <SubmitButton label="Tiếp" />
           </div>
         </form>
       </StepShell>
@@ -204,20 +273,14 @@ export function EntryFlow({ grouped, step }: { grouped: GroupedItems; step: Entr
 
   if (step === "additions") {
     return (
-      <StepShell title="Các khoản tăng thêm">
-        <ItemEditor
-          action={saveRegularItems}
-          items={grouped.regular}
-          submitLabel="Tiếp"
-          emptyLabel="Chưa có khoản tăng thêm."
-          backHref="/entry?step=balance"
-        />
+      <StepShell title="Các khoản tăng thêm" note="Đơn vị nhập: nghìn VND. Ví dụ: nhập 10 = 10.000 VND.">
+        <AdditionsEditor />
       </StepShell>
     );
   }
 
   return (
-    <StepShell title="Các khoản đầu tư & tiết kiệm">
+    <StepShell title="Các khoản đầu tư & tiết kiệm" note="Đơn vị nhập: nghìn VND. Ví dụ: nhập 10 = 10.000 VND.">
       <ItemEditor
         action={saveSavingsAndSnapshot}
         items={grouped.savings}
@@ -227,7 +290,7 @@ export function EntryFlow({ grouped, step }: { grouped: GroupedItems; step: Entr
         confirmRefundOnDelete
       />
       <p className="mt-4 text-center text-xs text-ink/55">
-        Tổng hiện tại: {formatMoney([grouped.available, ...grouped.regular, ...grouped.savings].filter(Boolean).reduce((sum, item) => sum + (item?.amount ?? 0), 0))} VND
+        Tổng hiện tại: {formatMoney([grouped.available, ...grouped.savings].filter(Boolean).reduce((sum, item) => sum + (item?.amount ?? 0), 0))} VND
       </p>
     </StepShell>
   );

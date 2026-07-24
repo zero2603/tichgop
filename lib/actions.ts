@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { getSupabase, hasSupabaseEnv } from "@/lib/supabase";
 import type { BalancePoint, GroupedItems, Item } from "@/lib/types";
 
+const INPUT_AMOUNT_UNIT = 1_000;
+
 function toNumber(value: unknown) {
   if (typeof value === "number") {
     return value;
@@ -24,7 +26,7 @@ function parseAmount(value: FormDataEntryValue | null) {
   if (!Number.isFinite(amount)) {
     throw new Error("Số tiền không hợp lệ");
   }
-  return amount;
+  return amount * INPUT_AMOUNT_UNIT;
 }
 
 function normalizeItem(row: {
@@ -59,14 +61,14 @@ export async function getItemsGrouped(): Promise<GroupedItems> {
   const items = (data ?? []).map(normalizeItem);
   return {
     available: items.find((item) => item.type === "available") ?? null,
-    regular: items.filter((item) => item.type === "regular"),
+    regular: [],
     savings: items.filter((item) => item.type === "savings")
   };
 }
 
 export async function getTotal() {
   const grouped = await getItemsGrouped();
-  return [grouped.available, ...grouped.regular, ...grouped.savings]
+  return [grouped.available, ...grouped.savings]
     .filter((item): item is Item => Boolean(item))
     .reduce((sum, item) => sum + item.amount, 0);
 }
@@ -258,6 +260,32 @@ async function applySavingsDeltaToAvailable(delta: number) {
   }
 }
 
+async function addToAvailableBalance(amount: number) {
+  if (amount === 0) {
+    return;
+  }
+
+  const available = await getAvailableBalanceRecord();
+
+  const { error } = await getSupabase()
+    .from("items")
+    .update({ name: "Số dư khả dụng", amount: available.amount + amount })
+    .eq("id", available.id)
+    .eq("type", "available");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function deleteAllRegularItems() {
+  const { error } = await getSupabase().from("items").delete().eq("type", "regular");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 async function deleteItems(ids: string[], type: "regular" | "savings") {
   if (ids.length === 0) {
     return;
@@ -415,6 +443,31 @@ export async function saveAvailableBalance(formData: FormData) {
 
 export async function saveRegularItems(formData: FormData) {
   await saveItemGroup(formData, "regular");
+
+  revalidatePath("/");
+  revalidatePath("/entry");
+  redirect("/entry?step=savings");
+}
+
+export async function saveAdditionalAmounts(formData: FormData) {
+  const amounts = formData.getAll("addition_amount");
+  let totalAddition = 0;
+
+  for (const rawAmount of amounts) {
+    if (!String(rawAmount).trim()) {
+      continue;
+    }
+
+    const amount = parseAmount(rawAmount);
+    if (amount < 0) {
+      throw new Error("Số tiền không được nhỏ hơn 0");
+    }
+
+    totalAddition += amount;
+  }
+
+  await addToAvailableBalance(totalAddition);
+  await deleteAllRegularItems();
 
   revalidatePath("/");
   revalidatePath("/entry");

@@ -15,7 +15,7 @@ body {
   background-color: #fbfbf8;
   background-image:
     linear-gradient(rgb(251 251 248 / 62%), rgb(251 251 248 / 74%)),
-    url("/money-texture-bg.jpg");
+    url("/money.jpg");
   background-position: center, center top;
   background-size: cover, 313px 209px;
   background-repeat: no-repeat, repeat;

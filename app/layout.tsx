@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   title: "Tích góp",
   description: "Tích góp cá nhân của tôi",
   manifest: "/manifest.webmanifest",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false
+    }
+  },
   icons: {
     icon: [
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
