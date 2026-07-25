@@ -33,7 +33,7 @@ export default async function HomePage() {
             Cập nhật
           </Link>
         </div>
-        <div className="mt-4 flex gap-3 items-stretch">
+        <div className="mt-4 flex gap-3 items-baseline">
           <h1 className="text-4xl font-semibold leading-tight tracking-normal text-ink">
             {formatMoney(total)}
           </h1>
