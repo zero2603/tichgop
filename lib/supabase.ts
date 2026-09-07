@@ -55,6 +55,13 @@ export type Database = {
         };
         Returns: undefined;
       };
+      settle_savings_item: {
+        Args: {
+          savings_item_id: string;
+          final_amount: number;
+        };
+        Returns: undefined;
+      };
     };
     Views: Record<string, never>;
     Enums: Record<string, never>;

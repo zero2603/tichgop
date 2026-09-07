@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { saveAdditionalAmounts, saveAvailableBalance, saveSavingsAndSnapshot } from "@/lib/actions";
+import { saveAdditionalAmounts, saveAvailableBalance, saveSavingsAndSnapshot, settleSavingsItem } from "@/lib/actions";
 import { formatMoney } from "@/lib/format";
 import type { GroupedItems, Item } from "@/lib/types";
 import { MoneyInput } from "@/components/MoneyInput";
@@ -58,7 +58,8 @@ function ItemEditor({
   submitLabel,
   emptyLabel,
   backHref,
-  confirmRefundOnDelete = false
+  confirmRefundOnDelete = false,
+  allowSettlement = false
 }: {
   action: (formData: FormData) => void;
   items: Item[];
@@ -66,10 +67,12 @@ function ItemEditor({
   emptyLabel: string;
   backHref: string;
   confirmRefundOnDelete?: boolean;
+  allowSettlement?: boolean;
 }) {
   const [visibleIds, setVisibleIds] = useState(() => items.map((item) => item.id));
   const [deletedIds, setDeletedIds] = useState<string[]>([]);
   const [refundDeletedIds, setRefundDeletedIds] = useState<string[]>([]);
+  const [settlingItem, setSettlingItem] = useState<Item | null>(null);
   const [newRows, setNewRows] = useState<DraftRow[]>(() => (items.length === 0 ? [{ key: Date.now() }] : []));
   const visibleItems = useMemo(
     () => items.filter((item) => visibleIds.includes(item.id)),
@@ -103,30 +106,59 @@ function ItemEditor({
         ) : null}
 
         {visibleItems.map((item) => (
-          <div className="grid grid-cols-[minmax(0,1fr)_minmax(7rem,0.78fr)_2.75rem] items-center gap-2" key={item.id}>
-            <input type="hidden" name="item_id" value={item.id} />
-            <input
-              name={`name_${item.id}`}
-              defaultValue={item.name}
-              className="min-h-12 min-w-0 rounded-md border border-ink/35 bg-white/92 px-3 py-2 text-base outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/20"
-              aria-label="Tên khoản"
-              required
-            />
-            <MoneyInput
-              name={`amount_${item.id}`}
-              defaultValue={item.amount}
-              className="min-h-12 min-w-0 rounded-md border border-ink/35 bg-white/92 px-3 py-2 text-right text-base outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/20"
-              aria-label="Số tiền"
-              required
-            />
-            <button
-              className="inline-grid min-h-12 w-11 place-items-center rounded-md border border-red-200 bg-white/90 text-sm font-bold text-brick transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
-              type="button"
-              onClick={() => removeExisting(item.id)}
-              aria-label="Xóa khoản"
-            >
-              X
-            </button>
+          <div className="grid gap-2" key={item.id}>
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(7rem,0.78fr)_2.75rem] items-center gap-2">
+              <input type="hidden" name="item_id" value={item.id} />
+              <input
+                name={`name_${item.id}`}
+                defaultValue={item.name}
+                className="min-h-12 min-w-0 rounded-md border border-ink/35 bg-white/92 px-3 py-2 text-base outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/20"
+                aria-label="Tên khoản"
+                required
+              />
+              <MoneyInput
+                name={`amount_${item.id}`}
+                defaultValue={item.amount}
+                className="min-h-12 min-w-0 rounded-md border border-ink/35 bg-white/92 px-3 py-2 text-right text-base outline-none transition focus:border-sky focus:ring-2 focus:ring-sky/20"
+                aria-label="Số tiền"
+                required
+              />
+              {allowSettlement ? (
+                <div className="flex h-12 w-11 flex-col overflow-hidden rounded-md border border-ink/25 bg-white/90">
+                  <button
+                    className="grid flex-1 place-items-center border-b border-ink/15 text-brick transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-200"
+                    type="button"
+                    onClick={() => removeExisting(item.id)}
+                    aria-label={`Xóa ${item.name}`}
+                    title="Xóa khoản"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current stroke-2">
+                      <path d="M5 5l14 14M19 5L5 19" />
+                    </svg>
+                  </button>
+                  <button
+                    className="grid flex-1 place-items-center text-sky transition hover:bg-sky/10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sky/30"
+                    type="button"
+                    onClick={() => setSettlingItem(item)}
+                    aria-label={`Tất toán ${item.name}`}
+                    title="Tất toán"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 fill-none stroke-current stroke-2">
+                      <path d="M12 3v12m0 0l4-4m-4 4l-4-4M4 21h16" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="inline-grid min-h-12 w-11 place-items-center rounded-md border border-red-200 bg-white/90 text-sm font-bold text-brick transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  type="button"
+                  onClick={() => removeExisting(item.id)}
+                  aria-label="Xóa khoản"
+                >
+                  X
+                </button>
+              )}
+            </div>
           </div>
         ))}
 
@@ -163,6 +195,43 @@ function ItemEditor({
       {refundDeletedIds.map((id) => (
         <input key={id} type="hidden" name="refund_deleted_item_id" value={id} />
       ))}
+
+      {settlingItem ? (
+        <div className="fixed inset-0 z-20 grid place-items-center bg-ink/30 p-5" role="presentation">
+          <div className="w-full max-w-sm rounded-lg border border-white/55 bg-white p-5 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="settlement-title">
+            <h2 id="settlement-title" className="text-lg font-semibold text-ink">Tất toán {settlingItem.name}</h2>
+            <p className="mt-1 text-sm text-ink/60">Nhập số tiền cuối cùng nhận được.</p>
+            <input type="hidden" name="settlement_item_id" value={settlingItem.id} />
+            <label className="mt-5 block">
+              <span className="mb-1 block text-sm font-medium text-ink/75">Số tiền tất toán</span>
+              <MoneyInput
+                name="settlement_amount"
+                defaultValue={settlingItem.amount}
+                className="min-h-12 w-full rounded-md border border-ink/35 bg-white px-3 py-2 text-right text-base outline-none focus:border-sky focus:ring-2 focus:ring-sky/20"
+                aria-label={`Số tiền tất toán ${settlingItem.name}`}
+                required
+                autoFocus
+              />
+            </label>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                className="min-h-10 rounded-md px-3 text-sm font-semibold text-ink/65 transition hover:bg-ink/5"
+                type="button"
+                onClick={() => setSettlingItem(null)}
+              >
+                Huỷ
+              </button>
+              <button
+                className="min-h-10 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                type="submit"
+                formAction={settleSavingsItem}
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex justify-end pt-4">
         <button
@@ -288,6 +357,7 @@ export function EntryFlow({ grouped, step }: { grouped: GroupedItems; step: Entr
         emptyLabel="Chưa có khoản đầu tư hoặc tiết kiệm."
         backHref="/entry?step=additions"
         confirmRefundOnDelete
+        allowSettlement
       />
       <p className="mt-4 text-center text-xs text-ink/55">
         Tổng hiện tại: {formatMoney([grouped.available, ...grouped.savings].filter(Boolean).reduce((sum, item) => sum + (item?.amount ?? 0), 0))} VND

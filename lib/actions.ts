@@ -514,6 +514,38 @@ export async function createSavings(formData: FormData) {
   redirect("/entry");
 }
 
+export async function settleSavingsItem(formData: FormData) {
+  const id = String(formData.get("settlement_item_id") ?? "");
+  const finalAmount = parseAmount(formData.get("settlement_amount"));
+
+  if (!id) {
+    throw new Error("Không tìm thấy khoản tiết kiệm cần tất toán");
+  }
+  if (finalAmount < 0) {
+    throw new Error("Số tiền tất toán không được nhỏ hơn 0");
+  }
+
+  const { error: settlementError } = await getSupabase().rpc("settle_savings_item", {
+    savings_item_id: id,
+    final_amount: finalAmount
+  });
+
+  if (settlementError) {
+    throw new Error(settlementError.message);
+  }
+
+  const total = await getTotal();
+  const { error: snapshotError } = await getSupabase().from("balances").insert({ total });
+
+  if (snapshotError) {
+    throw new Error(snapshotError.message);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/entry");
+  redirect("/entry?step=savings");
+}
+
 export async function addNewItem(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const amount = parseAmount(formData.get("initial_amount"));
